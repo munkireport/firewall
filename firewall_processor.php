@@ -6,7 +6,7 @@ use munkireport\processors\Processor;
 class Firewall_processor extends Processor
 {
     public function run($plist)
-	{
+    {
         // If plist is empty, echo out error
         if ( ! $plist){
                 throw new Exception("Error Processing Request: No property list found", 1);
@@ -19,6 +19,6 @@ class Firewall_processor extends Processor
         $model = Firewall_model::firstOrNew(['serial_number' => $this->serial_number]);
 
         $model->fill($mylist);
-        $model->save();    
-	}
+        $model->save();
+    }
 }
