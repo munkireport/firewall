@@ -7,9 +7,9 @@
 $(document).on('appReady', function(){
     // Set the tab badge to blank
     $('#firewall-cnt').html("");
-    
+
     $.getJSON(appUrl + '/module/firewall/get_firewall_data/' + serialNumber, function(data){
-        
+
         if( data.length == 0 ){
             $('#firewall-msg').text(i18n.t('no_data'));
             $('#firewall-cnt').text('')
@@ -54,7 +54,7 @@ $(document).on('appReady', function(){
                         var apps_data = JSON.parse(d['applications']);
                         rows_apps = '<tr><th>'+i18n.t('firewall.bundle_id')+'</th><th>'+i18n.t('firewall.globalstate')+'</th></tr>'
                         $.each(apps_data, function(i,d){
-                            var bundle_id = i                                
+                            var bundle_id = i
                             if (d == 0){
                                 var app_state = i18n.t('firewall.block_all')
                             } else if (d == 1){
@@ -75,7 +75,7 @@ $(document).on('appReady', function(){
                         var services_data = JSON.parse(d['services']);
                         rows_services = '<tr><th>'+i18n.t('firewall.service')+'</th><th>'+i18n.t('firewall.globalstate')+'</th></tr>'
                         $.each(services_data, function(i,d){
-                            var service = i                                
+                            var service = i
                             if (d == 0){
                                 var service_state = i18n.t('firewall.block_all')
                             } else if (d == 1){

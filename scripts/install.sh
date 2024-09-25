@@ -10,7 +10,7 @@ CTL="${BASEURL}index.php?/module/firewall/"
 if [ $? = 0 ]; then
 	# Make executable
 	chmod a+x "${MUNKIPATH}preflight.d/firewall.py"
-    
+
 	# Touch the cache file to prevent errors
 	mkdir -p "${MUNKIPATH}preflight.d/cache"
 	touch "${MUNKIPATH}preflight.d/cache/firewall.plist"

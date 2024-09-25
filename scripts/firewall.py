@@ -21,6 +21,7 @@ from munkilib import FoundationPlist
 from CoreFoundation import CFPreferencesCopyAppValue
 
 def get_firewall_info():
+
     '''Uses system profiler to get firewall info for the machine.'''
     cmd = ['/usr/sbin/system_profiler', 'SPFirewallDataType', '-xml']
     proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
@@ -40,6 +41,7 @@ def get_firewall_info():
         return {}
 
 def flatten_firewall_info(array):
+
     '''Un-nest firewall info, return array with objects with relevant keys'''
     firewall = {}
     for obj in array:
@@ -61,9 +63,14 @@ def flatten_firewall_info(array):
                         obj[item][application] = 0
                 firewall['applications'] = json.dumps(obj[item])
 
+            # Collect this for the macOS 15+ firewall function
+            elif item == 'spfirewall_loggingenabled':
+                firewall['spfirewall_loggingenabled'] = obj[item]
+
     return firewall
 
-def get_alf_preferences():
+def get_alf_preferences_legacy():
+
     pl = FoundationPlist.readPlist("/Library/Preferences/com.apple.alf.plist")
     firewall = {}
 
@@ -83,8 +90,6 @@ def get_alf_preferences():
             firewall['loggingenabled'] = to_bool(pl[item])
         elif item == 'loggingoption':
             firewall['loggingoption'] = pl[item]
-        
-            print(firewall['loggingoption'])
         elif item == 'version':
             firewall['version'] = pl[item]
 
@@ -126,6 +131,67 @@ def get_alf_preferences():
 
     return firewall
 
+def get_alf_preferences(result):
+
+    firewall = {}
+
+    # Use new method to get firewall state and infos
+    sp = subprocess.Popen(['/usr/libexec/ApplicationFirewall/socketfilterfw', '--getblockall'], stdout=subprocess.PIPE)
+    out, err = sp.communicate()
+    if "is blocking all" in out.decode("utf-8", errors="ignore"):
+        firewall['blockallincoming'] = 1
+    else:
+        firewall['blockallincoming'] = 0
+
+    # Get globalstate
+    sp = subprocess.Popen(['/usr/libexec/ApplicationFirewall/socketfilterfw', '--getglobalstate'], stdout=subprocess.PIPE)
+    out, err = sp.communicate()
+    out_state = out.decode("utf-8", errors="ignore")
+
+    if "State = 1" in out_state and firewall['blockallincoming'] == 1:
+        firewall['globalstate'] = 2
+    elif "State = 1" in out_state  and firewall['blockallincoming'] == 0:
+        firewall['globalstate'] = 1
+    else:
+        firewall['globalstate'] = 0
+
+    # Get allowsignedenabled 
+    sp = subprocess.Popen(['/usr/libexec/ApplicationFirewall/socketfilterfw', '--getallowsigned'], stdout=subprocess.PIPE)
+    out, err = sp.communicate()
+    out_state = out.decode("utf-8", errors="ignore")
+    
+    if "built-in signed software ENABLED" in out_state:
+        firewall['allowsignedenabled'] = 1
+    else:
+        firewall['allowsignedenabled'] = 0
+
+    if "downloaded signed software ENABLED" in out_state:
+        firewall['allowdownloadsignedenabled'] = 1
+    else:
+        firewall['allowdownloadsignedenabled'] = 0
+
+    # Get stealthenabled 
+    sp = subprocess.Popen(['/usr/libexec/ApplicationFirewall/socketfilterfw', '--getstealthmode'], stdout=subprocess.PIPE)
+    out, err = sp.communicate()
+    if "stealth mode is on" in out.decode("utf-8", errors="ignore"):
+        firewall['stealthenabled'] = 1
+    else:
+        firewall['stealthenabled'] = 0
+
+    # Get loggingoption 
+    if 'spfirewall_loggingenabled' in result:
+        if result['spfirewall_loggingenabled'] == "No":
+            firewall['loggingoption'] = 0
+        elif result['spfirewall_loggingenabled'] == "Yes":
+            firewall['loggingoption'] = 1
+
+    return firewall
+
+def getDarwinVersion():
+    """Returns the Darwin version."""
+    darwin_version_tuple = platform.release().split('.')
+    return int(darwin_version_tuple[0])
+
 def to_bool(s):
     if s == True:
         return 1
@@ -143,8 +209,13 @@ def main():
     # Get results
     result = dict()
     info = get_firewall_info()
-    result = merge_two_dicts(flatten_firewall_info(info), get_alf_preferences())
-    
+    # If less than macOS 15 (Darwin 24), use legacy method to get firewall info
+    if getDarwinVersion() < 24:
+        result = merge_two_dicts(flatten_firewall_info(info), get_alf_preferences_legacy())
+    else:
+        result.update(flatten_firewall_info(info))
+        result.update(get_alf_preferences(result))
+
     # Write firewall results to cache
     cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
     output_plist = os.path.join(cachedir, 'firewall.plist')
