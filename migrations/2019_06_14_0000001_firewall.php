@@ -21,7 +21,7 @@ class Firewall extends Migration
             $table->text('services')->nullable();
             $table->boolean('stealthenabled')->nullable();
             $table->string('version')->nullable();
-           
+
             $table->index('serial_number');
             $table->index('allowdownloadsignedenabled');
             $table->index('allowsignedenabled');
@@ -30,7 +30,7 @@ class Firewall extends Migration
             $table->index('stealthenabled');
         });
     }
-    
+
     public function down()
     {
         $capsule = new Capsule();

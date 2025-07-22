@@ -8,24 +8,23 @@
  **/
 class Firewall_controller extends Module_controller
 {
+    /*** Protect methods with auth! ****/
+    function __construct()
+    {
+        // Store module path
+        $this->module_path = dirname(__FILE__);
+    }
 
-	/*** Protect methods with auth! ****/
-	function __construct()
-	{
-		// Store module path
-		$this->module_path = dirname(__FILE__);
-	}
+    /**
+     * Default method
+     * @author tuxudo
+     *
+     **/
+    function index()
+    {
+        echo "You've loaded the firewall module!";
+    }
 
-	/**
-	 * Default method
-	 * @author tuxudo
-	 *
-	 **/
-	function index()
-	{
-		echo "You've loaded the firewall module!";
-	}
-    
     /**
     * Firewall state widget
     *
@@ -35,15 +34,15 @@ class Firewall_controller extends Module_controller
     public function get_global_state()
     {
         jsonView(
-            Firewall_model::selectRaw("COUNT(CASE WHEN `globalstate` = '1' THEN 1 END) AS 'on'")
+            Firewall_model::selectRaw("COUNT(CASE WHEN `globalstate` = '1' THEN 1 END) AS 'limited'")
             ->selectRaw("COUNT(CASE WHEN `globalstate` = '0' THEN 1 END) AS 'off'")
-            ->selectRaw("COUNT(CASE WHEN `globalstate` = '2' THEN 1 END) AS 'limited'")
+            ->selectRaw("COUNT(CASE WHEN `globalstate` = '2' THEN 1 END) AS 'block_all'")
             ->filter()
             ->first()
             ->toLabelCount()
         );
     }
-    
+
     /**
     * Firewall allowsignedenabled widget
     *
@@ -60,7 +59,7 @@ class Firewall_controller extends Module_controller
                 ->toLabelCount()
         );
     }
-    
+
     /**
     * Firewall stealthenabled widget
     *
@@ -77,7 +76,7 @@ class Firewall_controller extends Module_controller
                 ->toLabelCount()
         );
     }
-    
+
     /**
     * Firewall allowdownloadsignedenabled widget
     *
@@ -95,7 +94,7 @@ class Firewall_controller extends Module_controller
         );
     }
 
-	/**
+    /**
      * Retrieve data in json format
      *
      **/
