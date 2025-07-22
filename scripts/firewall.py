@@ -14,7 +14,6 @@ import re
 import plistlib
 import json
 
-sys.path.insert(0,'/usr/local/munki')
 sys.path.insert(0, '/usr/local/munkireport')
 
 from munkilib import FoundationPlist
